@@ -2,43 +2,88 @@
 // Shows use of Microsoft.Office.Interop.Excel
 // recieves dataTable and export path to create Excel file
 
-public void WriteToExcel(DataTable dt, string sheetName)
-{
-        Excel.Application app = new Excel.Application
+/// <summary>
+    /// Writes received data to Excel
+    /// </summary>
+    public class MSWriter
+    {
+        /// <summary>
+        /// Exports DataTable to Excel to supplied export path
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="sheetName"></param>
+        public void WriteToExcel(DataTable table, string exportPath)
         {
-            Visible = true
-        };
-        Excel._Workbook book = (app.Workbooks.Add(""));
-        Excel._Worksheet sheet = app.ActiveWorkbook.Sheets[1];
-
-        int colCount = dt.Columns.Count;
-
-        object[] header = new object[colCount];
-
-        for (int i = 0; i < colCount; i++)
-        {
-            header[i] = dt.Columns[i].ColumnName;
-        }
-
-        Excel.Range headerRange = sheet.get_Range((Excel.Range)(sheet.Cells[1, 1]), (Excel.Range)(sheet.Cells[1, colCount]));
-        headerRange.Value = header;
-        headerRange.Interior.Color = ColorTranslator.ToOle(Color.LightGray);
-        headerRange.Font.Bold = true;
-
-        int rowsCount = dt.Rows.Count;
-
-        object[,] cells = new object[rowsCount, colCount];
-
-        for (int j = 0; j < rowsCount; j++)
-        {
+            //receive datatable and export path and creates Excel file
+            Excel.Application app = new Excel.Application
+            {
+                //Makes the application no show while it inputs the data
+                Visible = false
+            };
+            //Adds new workbook to app instance
+            Excel._Workbook book = (app.Workbooks.Add(""));
+            //Adds new worksheet to workbook
+            Excel._Worksheet sheet = app.ActiveWorkbook.Sheets[1];
+            //Gets count of columns within supplied dataTable
+            int colCount = table.Columns.Count;
+            //Creates object array for headers for each column
+            object[] header = new object[colCount];
+            //Loop to add column names to header object array
             for (int i = 0; i < colCount; i++)
             {
-                cells[j, i] = dt.Rows[j][i];
+                //Adds column names to header object array
+                header[i] = table.Columns[i].ColumnName;
             }
+
+            //Get range of headers 
+            Excel.Range headerRange = sheet.get_Range((Excel.Range)(sheet.Cells[1, 1]), (Excel.Range)(sheet.Cells[1, colCount]));
+            //Applies the headers to Excel file
+            headerRange.Value = header;
+            //Bolds header text
+            headerRange.Font.Bold = true;
+            //Gets count of rows from dataTable
+            int rowsCount = table.Rows.Count;
+            //Object multidimensional array for the cells within the dataTable
+            object[,] cells = new object[rowsCount, colCount];
+            //Adds the cells from dataTable to cell object array
+            for (int j = 0; j < rowsCount; j++)
+            {
+                for (int i = 0; i < colCount; i++)
+                {
+                    //Sets cell values to dataTable values
+                    cells[j, i] = table.Rows[j][i];
+                }
+            }
+            //prints the cell values to Excel cells
+            sheet.get_Range((Excel.Range)(sheet.Cells[1, 1]), (Excel.Range)(sheet.Cells[rowsCount + 1, colCount])).Value = cells;
+
+            //Saves Excel file to supplied location
+            SaveExcelFile(app, exportPath);
         }
 
-        sheet.get_Range((Excel.Range)(sheet.Cells[2, 1]), (Excel.Range)(sheet.Cells[rowsCount + 1, colCount])).Value = cells;
-        
-        sheet.Name = sheetName;
-}
- 
+        /// <summary>
+        /// Saves exported Excel file to supplied location
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="exportPath"></param>
+        public void SaveExcelFile(Excel.Application app, string exportPath)
+        {
+            //Stops from asking to overwrite
+            app.DisplayAlerts = false;
+            Excel._Worksheet sheet = app.ActiveSheet;
+
+            try
+            {
+                //Save and close
+                sheet.SaveAs(exportPath);
+            }
+            catch (Exception ex)
+            {
+                //If something fails, show the error
+                Console.WriteLine("ERROR: Failed to save Excel file! " + ex);
+            }
+
+            app.Quit();
+
+        }
+    }
